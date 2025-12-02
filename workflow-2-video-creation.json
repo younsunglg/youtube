@@ -1,0 +1,141 @@
+{
+  "name": "블로그 → 숏츠 동영상 제작",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "시작",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "inputType": "text",
+        "blogText": "안녕하세요! 오늘은 n8n으로 자동화를 만드는 방법을 소개합니다.\n\n블로그 글을 자동으로 유튜브 숏츠로 변환하면 콘텐츠 재활용이 쉬워집니다.\n\nn8n의 커스텀 노드를 활용하면 더욱 강력한 자동화가 가능합니다!",
+        "maxChars": 250,
+        "splitSegments": true,
+        "segmentLength": 50,
+        "language": "ko"
+      },
+      "id": "blog-to-shorts",
+      "name": "1. 블로그 → 스크립트",
+      "type": "n8n-nodes-blog-to-shorts.blogToShorts",
+      "typeVersion": 1,
+      "position": [460, 400],
+      "notes": "블로그 내용을 숏츠용 스크립트로 변환"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://picsum.photos/1080/1920",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-image",
+      "name": "2. 배경 이미지 다운로드",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 400],
+      "notes": "랜덤 세로 이미지 다운로드\n본인 이미지로 교체 가능"
+    },
+    {
+      "parameters": {
+        "resource": "Video",
+        "operation": "ImageToVideo",
+        "imageSource": "previousNode",
+        "binaryProperty": "data",
+        "duration": 10,
+        "outputWidth": 1080,
+        "outputHeight": 1920,
+        "enableSubtitles": true,
+        "subtitleSource": "manual",
+        "subtitleText": "={{ $node['1. 블로그 → 스크립트'].json.content }}",
+        "fontSize": 60,
+        "fontColor": "#FFFFFF",
+        "backgroundColor": "#000000",
+        "backgroundOpacity": 0.7,
+        "outputFormat": "mp4",
+        "videoQuality": "high"
+      },
+      "id": "sb-render",
+      "name": "3. 동영상 생성",
+      "type": "n8n-nodes-sb-render.sbRender",
+      "typeVersion": 1,
+      "position": [900, 400],
+      "notes": "이미지 + 자막 → MP4 동영상"
+    },
+    {
+      "parameters": {
+        "fileName": "={{ 'shorts_' + $now.format('yyyyMMdd_HHmmss') + '.mp4' }}",
+        "dataPropertyName": "data",
+        "options": {
+          "filePath": "/tmp/"
+        }
+      },
+      "id": "save-file",
+      "name": "4. 파일 저장",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1120, 400],
+      "notes": "/tmp/shorts_날짜시간.mp4 로 저장"
+    }
+  ],
+  "connections": {
+    "시작": {
+      "main": [
+        [
+          {
+            "node": "1. 블로그 → 스크립트",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. 블로그 → 스크립트": {
+      "main": [
+        [
+          {
+            "node": "2. 배경 이미지 다운로드",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. 배경 이미지 다운로드": {
+      "main": [
+        [
+          {
+            "node": "3. 동영상 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. 동영상 생성": {
+      "main": [
+        [
+          {
+            "node": "4. 파일 저장",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}
