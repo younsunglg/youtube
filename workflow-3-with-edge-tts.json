@@ -1,0 +1,214 @@
+{
+  "name": "블로그 → 숏츠 (음성 포함) - Edge TTS",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "시작",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "inputType": "text",
+        "blogText": "안녕하세요! 오늘은 n8n과 AI를 활용한 자동화에 대해 알아보겠습니다. 블로그 글을 자동으로 유튜브 숏츠로 변환하면 콘텐츠 재활용이 쉬워집니다. Edge TTS를 사용하면 무료로 고품질 음성을 생성할 수 있습니다!",
+        "maxChars": 250,
+        "splitSegments": true,
+        "segmentLength": 50,
+        "language": "ko"
+      },
+      "id": "blog-to-shorts",
+      "name": "1. 블로그 → 스크립트",
+      "type": "n8n-nodes-blog-to-shorts.blogToShorts",
+      "typeVersion": 1,
+      "position": [460, 400],
+      "notes": "블로그 내용을 숏츠용 스크립트로 변환"
+    },
+    {
+      "parameters": {
+        "command": "=cd /tmp && edge-tts --text \"{{ $json.content }}\" --voice ko-KR-SunHiNeural --rate=+0% --write-media narration_{{ $now.toUnixInteger() }}.mp3 && echo \"narration_{{ $now.toUnixInteger() }}.mp3\"",
+        "options": {}
+      },
+      "id": "edge-tts",
+      "name": "2. 텍스트 → 음성 (Edge TTS)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [680, 400],
+      "notes": "Edge TTS로 음성 생성\n완전 무료, 고품질"
+    },
+    {
+      "parameters": {
+        "filePath": "=/tmp/{{ $json.stdout.trim() }}",
+        "options": {}
+      },
+      "id": "read-audio",
+      "name": "3. 음성 파일 읽기",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [900, 400],
+      "notes": "생성된 MP3 파일을 읽어서 다음 노드로 전달"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://picsum.photos/1080/1920",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-image",
+      "name": "4. 배경 이미지",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 550],
+      "notes": "배경 이미지 다운로드"
+    },
+    {
+      "parameters": {
+        "mode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "merge",
+      "name": "5. 데이터 병합",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1120, 475],
+      "notes": "음성과 이미지를 하나의 아이템으로 병합"
+    },
+    {
+      "parameters": {
+        "resource": "Video",
+        "operation": "Render",
+        "videoSource": "previousNode",
+        "videoBinaryProperty": "data",
+        "audioSource": "previousNode",
+        "audioBinaryProperty": "data",
+        "enableSubtitles": true,
+        "subtitleSource": "manual",
+        "subtitleText": "={{ $node['1. 블로그 → 스크립트'].json.content }}",
+        "fontSize": 60,
+        "fontColor": "#FFFFFF",
+        "backgroundColor": "#000000",
+        "backgroundOpacity": 0.7,
+        "outputFormat": "mp4",
+        "videoQuality": "high"
+      },
+      "id": "sb-render",
+      "name": "6. 동영상 생성 (음성+자막)",
+      "type": "n8n-nodes-sb-render.sbRender",
+      "typeVersion": 1,
+      "position": [1340, 475],
+      "notes": "이미지 + 음성 + 자막 → MP4"
+    },
+    {
+      "parameters": {
+        "fileName": "={{ 'shorts_with_voice_' + $now.format('yyyyMMdd_HHmmss') + '.mp4' }}",
+        "dataPropertyName": "data",
+        "options": {
+          "filePath": "/tmp/"
+        }
+      },
+      "id": "save-file",
+      "name": "7. 파일 저장",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1560, 475],
+      "notes": "최종 동영상 저장"
+    }
+  ],
+  "connections": {
+    "시작": {
+      "main": [
+        [
+          {
+            "node": "1. 블로그 → 스크립트",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. 블로그 → 스크립트": {
+      "main": [
+        [
+          {
+            "node": "2. 텍스트 → 음성 (Edge TTS)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "4. 배경 이미지",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. 텍스트 → 음성 (Edge TTS)": {
+      "main": [
+        [
+          {
+            "node": "3. 음성 파일 읽기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. 음성 파일 읽기": {
+      "main": [
+        [
+          {
+            "node": "5. 데이터 병합",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. 배경 이미지": {
+      "main": [
+        [
+          {
+            "node": "5. 데이터 병합",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "5. 데이터 병합": {
+      "main": [
+        [
+          {
+            "node": "6. 동영상 생성 (음성+자막)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. 동영상 생성 (음성+자막)": {
+      "main": [
+        [
+          {
+            "node": "7. 파일 저장",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}

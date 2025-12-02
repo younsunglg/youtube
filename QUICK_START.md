@@ -42,6 +42,7 @@ n8n에서 처음부터 만들지 말고 **미리 만들어진 워크플로우를
 4. 파일 선택:
    - 테스트용: `workflow-1-test.json`
    - 동영상 제작용: `workflow-2-video-creation.json`
+   - **음성 포함 (Edge TTS):** `workflow-3-with-edge-tts.json` ⭐ 추천!
 
 ### 방법 2: 파일 내용 복사
 
@@ -108,6 +109,45 @@ vlc /tmp/shorts_$(date +%Y%m%d)*.mp4
 ```
 
 **✨ 축하합니다! 첫 숏츠를 만들었어요! 🎉**
+
+---
+
+## 🎙️ 음성 포함 동영상 제작 (추천!)
+
+### Edge TTS 설치 (2분)
+
+**완전 무료 고품질 TTS!**
+
+```bash
+cd /home/user/youtube
+./install-edge-tts.sh
+```
+
+### 워크플로우 3: 음성 포함 숏츠 ⭐
+
+**목적:** 음성 나레이션 + 자막이 있는 전문적인 동영상
+
+1. `workflow-3-with-edge-tts.json` import
+2. (선택) 블로그 텍스트 수정
+3. 상단 **Execute Workflow** 버튼 (▶️) 클릭
+4. 기다리기... (30초~1분)
+5. 완료!
+
+### 결과 확인
+
+```bash
+ls -lh /tmp/shorts_with_voice_*.mp4
+vlc /tmp/shorts_with_voice_*.mp4
+```
+
+**✨ 음성이 포함된 전문적인 숏츠 완성! 🎊**
+
+**차이점:**
+- ✅ 음성 나레이션 추가
+- ✅ 더 높은 완성도
+- ✅ 시청자 참여도 향상
+
+**상세 가이드:** `EDGE_TTS_GUIDE.md` 참고
 
 ---
 
