@@ -1,0 +1,113 @@
+{
+  "name": "Blog to Shorts - Example Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "inputType": "url",
+        "blogUrl": "https://example.com/blog-post",
+        "contentSelector": "article, .post-content, main",
+        "maxChars": 300,
+        "splitSegments": true,
+        "segmentLength": 50,
+        "language": "ko"
+      },
+      "name": "Blog to Shorts",
+      "type": "n8n-nodes-blog-to-shorts.blogToShorts",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://texttospeech.googleapis.com/v1/text:synthesize",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "input",
+              "value": "={{ { text: $json.content } }}"
+            },
+            {
+              "name": "voice",
+              "value": "={{ { languageCode: $json.language + '-KR', name: $json.language + '-KR-Standard-A' } }}"
+            },
+            {
+              "name": "audioConfig",
+              "value": "={{ { audioEncoding: 'MP3' } }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Google TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300],
+      "notes": "Convert text to speech using Google Cloud TTS"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "docId": "={{ $json.spreadsheetId }}",
+        "sheetName": "={{ $json.sheetName }}",
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "Date": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+            "Blog URL": "={{ $node['Blog to Shorts'].json.metadata.sourceUrl }}",
+            "Content Length": "={{ $node['Blog to Shorts'].json.originalLength }}",
+            "Shorts Script": "={{ $node['Blog to Shorts'].json.content }}",
+            "Status": "Completed"
+          }
+        },
+        "options": {}
+      },
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [850, 400],
+      "notes": "Optional: Log conversion results"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Blog to Shorts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blog to Shorts": {
+      "main": [
+        [
+          {
+            "node": "Google TTS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
